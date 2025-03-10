@@ -1,0 +1,13 @@
+[Unit]
+Description=Genz.ad Backend Service
+After=network.target postgresql.service redis-server.service
+
+[Service]
+User={{ server_user }}
+Group={{ server_user }}
+WorkingDirectory={{ backend_dir }}
+ExecStart=/bin/bash -c 'source venv/bin/activate && python main.py'
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

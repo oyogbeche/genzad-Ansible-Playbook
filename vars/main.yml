@@ -1,0 +1,25 @@
+# Server configuration
+ubuntu_version: "22.04"
+server_hostname: "genz-ad-server"
+
+# PostgreSQL configuration
+postgres_version: "15"
+postgres_db_name: "ai_ad_gen"
+postgres_user: "aiadmin"
+
+# Redis configuration
+redis_bind_ip: "127.0.0.1"
+redis_port: 6379
+redis_maxmemory: "256mb"
+redis_maxmemory_policy: "allkeys-lru"
+
+# Nginx configuration
+domain_name: "genz.ad"
+api_subdomain: "api.genz.ad"
+staging_api_subdomain: "staging.api.genz.ad"
+frontend_port: 5000
+backend_port: 7001
+
+# Application directories
+frontend_dir: "/home/{{ server_user }}/AI-Ad-Gen-Frontend"
+backend_dir: "/home/{{ server_user }}/Genz-ad-backend/AI-Ad-Gen-Backend"

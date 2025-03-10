@@ -1,0 +1,136 @@
+- name: Add PostgreSQL repository key
+  apt_key:
+    url: https://www.postgresql.org/media/keys/ACCC4CF8.asc
+    state: present
+
+- name: Add PostgreSQL repository
+  apt_repository:
+    repo: "deb http://apt.postgresql.org/pub/repos/apt/ {{ ansible_distribution_release }}-pgdg main"
+    state: present
+    update_cache: yes
+
+- name: Display distribution release
+  debug:
+    var: ansible_distribution_release
+
+- name: Check repository sources
+  shell: cat /etc/apt/sources.list.d/*
+  register: sources_check
+  changed_when: false
+  failed_when: false
+
+- name: Display repository sources
+  debug:
+    var: sources_check.stdout_lines
+
+- name: Update apt cache again
+  apt:
+    update_cache: yes
+
+- name: Check available PostgreSQL versions
+  shell: apt-cache policy postgresql*
+  register: pg_versions
+  changed_when: false
+
+- name: Display available PostgreSQL versions
+  debug:
+    var: pg_versions.stdout_lines
+
+
+- name: Install PostgreSQL (default version)
+  apt:
+    name:
+      - postgresql
+      - postgresql-contrib
+      - libpq-dev
+    state: present
+
+- name: Check for PostgreSQL service
+  shell: systemctl list-units | grep -i postgres
+  register: postgres_services
+  changed_when: false
+  failed_when: false
+
+- name: Display available PostgreSQL services
+  debug:
+    var: postgres_services.stdout_lines
+
+
+- name: Ensure PostgreSQL service is running
+  service:
+    name: "{{ item }}"
+    state: started
+    enabled: yes
+  with_items:
+    - postgresql
+    - postgresql.service
+    - postgresql@{{ postgres_version }}.service
+    - postgresql-{{ postgres_version }}.service
+  failed_when: false
+  register: postgres_service_result
+
+- name: Display service result
+  debug:
+    var: postgres_service_result
+
+- name: Create PostgreSQL user
+  shell: |
+    sudo -u postgres psql -c "CREATE USER {{ postgres_user }} WITH PASSWORD '{{ postgres_password }}' CREATEDB SUPERUSER;"
+  register: create_user_result
+  changed_when: create_user_result.rc == 0
+  failed_when: false
+  args:
+    executable: /bin/bash
+
+- name: Display user creation result
+  debug:
+    var: create_user_result
+
+- name: Create PostgreSQL database
+  shell: |
+    sudo -u postgres psql -c "CREATE DATABASE {{ postgres_db_name }} OWNER {{ postgres_user }};"
+  register: create_db_result
+  changed_when: create_db_result.rc == 0
+  failed_when: false
+  args:
+    executable: /bin/bash
+
+- name: Display database creation result
+  debug:
+    var: create_db_result
+
+- name: Find PostgreSQL version
+  shell: psql --version | grep -oP 'psql \(PostgreSQL\) \K[0-9]+'
+  register: pg_version_installed
+  changed_when: false
+  become: yes
+  become_user: postgres
+  failed_when: false
+
+- name: Display PostgreSQL version
+  debug:
+    var: pg_version_installed.stdout
+
+- name: Find PostgreSQL config directory
+  shell: find /etc/postgresql -type f -name "pg_hba.conf"
+  register: pg_config_path
+  changed_when: false
+  failed_when: false
+
+- name: Display PostgreSQL config path
+  debug:
+    var: pg_config_path.stdout_lines
+
+- name: Configure PostgreSQL to allow connections from the application
+  lineinfile:
+    path: "{{ pg_config_path.stdout_lines[0] }}"
+    regexp: '^host\s+{{ postgres_db_name }}\s+{{ postgres_user }}\s+127.0.0.1/32'
+    line: "host {{ postgres_db_name }} {{ postgres_user }} 127.0.0.1/32 md5"
+    state: present
+  when: pg_config_path.stdout_lines | length > 0
+  notify: restart postgresql
+
+- name: Warn if PostgreSQL config not found
+  debug:
+    msg: "WARNING: Could not find pg_hba.conf. Configuration not updated!"
+  when: pg_config_path.stdout_lines | length == 0

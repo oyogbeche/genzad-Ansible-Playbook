@@ -1,0 +1,27 @@
+- name: Configure PM2 to start on boot
+  command: pm2 startup
+  args:
+    creates: /etc/systemd/system/pm2-{{ server_user }}.service
+  become: yes
+
+- name: Check if frontend is already running in PM2
+  shell: pm2 list | grep ai-adgen-frontend
+  register: frontend_running
+  ignore_errors: yes
+  become: yes
+  become_user: "{{ server_user }}"
+  changed_when: false
+
+- name: Start frontend with PM2
+  command: pm2 start pnpm --name ai-adgen-frontend -- start --port {{ frontend_port }}
+  args:
+    chdir: "{{ frontend_dir }}"
+  become: yes
+  become_user: "{{ server_user }}"
+  when: frontend_running.rc != 0
+
+- name: Save PM2 process list
+  command: pm2 save
+  become: yes
+  become_user: "{{ server_user }}"
+  changed_when: false

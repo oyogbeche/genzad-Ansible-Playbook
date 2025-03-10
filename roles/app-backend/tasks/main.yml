@@ -1,0 +1,12 @@
+- name: Create backend systemd service
+  template:
+    src: backend-service.j2
+    dest: /etc/systemd/system/backend-adgen.service
+  notify: reload systemd
+
+- name: Enable and start backend service
+  systemd:
+    name: backend-adgen
+    enabled: yes
+    state: started
+    daemon_reload: yes

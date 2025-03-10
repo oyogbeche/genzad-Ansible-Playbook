@@ -1,0 +1,58 @@
+- name: Install Nginx and Certbot
+  apt:
+    name:
+      - nginx
+      - python3-certbot-nginx
+    state: present
+
+- name: Ensure Nginx sites-available directory exists
+  file:
+    path: /etc/nginx/sites-available
+    state: directory
+    mode: '0755'
+
+- name: Ensure Nginx sites-enabled directory exists
+  file:
+    path: /etc/nginx/sites-enabled
+    state: directory
+    mode: '0755'
+
+- name: Create Nginx configuration for the frontend
+  template:
+    src: frontend.conf.j2
+    dest: /etc/nginx/sites-available/frontend.conf
+  notify: reload nginx
+
+- name: Create Nginx configuration for the backend
+  template:
+    src: backend.conf.j2
+    dest: /etc/nginx/sites-available/backend.conf
+  notify: reload nginx
+
+- name: Verify Nginx configurations were created
+  stat:
+    path: /etc/nginx/sites-available/{{ item }}
+  register: nginx_configs
+  loop:
+    - frontend.conf
+    - backend.conf
+
+- name: Debug Nginx configuration files
+  debug:
+    var: nginx_configs
+
+- name: Enable Nginx configurations
+  file:
+    src: /etc/nginx/sites-available/{{ item }}
+    dest: /etc/nginx/sites-enabled/{{ item }}
+    state: link
+  loop:
+    - frontend.conf
+    - backend.conf
+  when: nginx_configs.results | selectattr('stat.exists', 'equalto', true) | list | length == 2
+  notify: reload nginx
+
+- name: Obtain SSL certificates
+  command: certbot --nginx -d {{ domain_name }} -d {{ api_subdomain }} -d {{ staging_api_subdomain }} --non-interactive --agree-tos --email webmaster@{{ domain_name }}
+  args:
+    creates: /etc/letsencrypt/live/{{ domain_name }}/fullchain.pem
