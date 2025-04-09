@@ -3,10 +3,6 @@
     name:
       - build-essential
       - git
-      - curl
-      - wget
-      - vim
-      - htop
       - ufw
       - software-properties-common
       - apt-transport-https
@@ -15,6 +11,8 @@
       - lsb-release
       - python3-pip
       - python3-venv
+      - nginx
+      - python3-certbot-nginx
       - nodejs
       - npm
     state: present
@@ -35,14 +33,15 @@
     dest: "/tmp/ansible_key.pem"
     mode: '0600'
   delegate_to: localhost
-  become: no
+  become: false
+  state: present
 
 - name: Ensure key has correct permissions
   file:
     path: "/tmp/ansible_key.pem"
     mode: '0600'
   delegate_to: localhost
-  become: no
+  become: false
 
 - name: Set hostname
   hostname:
@@ -60,3 +59,4 @@
   ufw:
     state: enabled
     policy: deny
+

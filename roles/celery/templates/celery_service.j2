@@ -1,0 +1,17 @@
+[Unit]
+Description=Celery Worker - {{ service_name }}
+After=network.target
+
+[Service]
+Type=simple
+User={{ server.user }}
+Group={{ server.user }}
+WorkingDirectory={{ project_dir }}
+EnvironmentFile={{ env_file }}
+ExecStart={{ project_dir }}/venv/bin/celery -A app worker --loglevel=INFO 
+Restart=always
+RestartSec=5
+SyslogIdentifier={{ service_name }}
+
+[Install]
+WantedBy=multi-user.target

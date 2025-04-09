@@ -1,3 +1,8 @@
-- name: reload systemd
+- name: Reload backend services
   systemd:
-    daemon_reload: yes
+    name: "{{ item }}"
+    enabled: true
+    daemon_reload: true
+  loop:
+    - genz-backend-prod
+    - genz-backend-staging

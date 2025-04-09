@@ -14,8 +14,6 @@
 
   roles:
     - base-setup
-    - postgres
-    - redis
     - nginx
     - app-backend
     - app-frontend

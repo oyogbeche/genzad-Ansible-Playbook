@@ -1,25 +1,53 @@
 # Server configuration
 ubuntu_version: "22.04"
-server_hostname: "genz-ad-server"
-
-# PostgreSQL configuration
-postgres_version: "15"
-postgres_db_name: "ai_ad_gen"
-postgres_user: "aiadmin"
-
-# Redis configuration
-redis_bind_ip: "127.0.0.1"
-redis_port: 6379
-redis_maxmemory: "256mb"
-redis_maxmemory_policy: "allkeys-lru"
+server_hostname: "genzad-server"
+server: 
+  user: genzad
 
 # Nginx configuration
-domain_name: "genz.ad"
-api_subdomain: "api.genz.ad"
-staging_api_subdomain: "staging.api.genz.ad"
-frontend_port: 5000
-backend_port: 7001
+frontend_sites:
+  - domain_name: genz.ad
+    cert_name: genz.ad
+    aliases: ["www.genz.ad"]
+    port: 5000
+
+  - domain_name: staging.genz.ad
+    cert_name: staging.genz.ad
+    aliases: []
+    port: 5005
+
+backend_sites:
+  - domain_name: api.genz.ad
+    cert_name: api.genz.ad
+    aliases: []
+    port: 7000
+
+  - domain_name: staging.api.genz.ad
+    cert_name: staging.api.genz.ad
+    aliases: []
+    port: 7001
+
+email: "genzadshng12@gmail.com"
+
 
 # Application directories
-frontend_dir: "/home/{{ server_user }}/AI-Ad-Gen-Frontend"
-backend_dir: "/home/{{ server_user }}/Genz-ad-backend/AI-Ad-Gen-Backend"
+backend_services:
+  - service_name: "genz-backend-prod"
+    project_dir: "/home/{{ server.user }}/Genz-ad-backend-prod"
+    env_file: "/home/{{ server.user }}/vault/prod/.env"
+    port: 7000
+
+  - service_name: "genz-backend-staging"
+    project_dir: "/home/{{ server.user }}/Genz-ad-backend-staging"
+    env_file: "/home/{{ server.user }}/vault/staging/.env"
+    port: 7001
+
+# Celery configuration
+celery_services:
+  - service_name: "genz-backend-prod-celery"
+    project_dir: "/home/{{ server.user }}/Genz-ad-backend-prod"
+    env_file: "/home/{{ server.user }}/vault/prod/.env"
+
+  - service_name: "genz-backend-staging-celery"
+    project_dir: "/home/{{ server.user }}/Genz-ad-backend-staging"
+    env_file: "/home/{{ server.user }}/vault/staging/.env"

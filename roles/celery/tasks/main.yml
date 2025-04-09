@@ -1,0 +1,8 @@
+- name: Configure Celery systemd services
+  template:
+    src: celery_service.j2
+    dest: "/etc/systemd/system/celery-{{ item.service_name }}.service"
+    mode: "0644"
+  loop: "{{ celery_services }}"
+  notify: Reload systemd configuration
+
